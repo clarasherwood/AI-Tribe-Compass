@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A short quiz that places you among the AI tribes described in Michel Justen's guide, with readings from the opposing side.">
+<style>
+:root { color-scheme: light; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+<title>AI Tribe Compass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@500;700;800&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+/* Layout: one 44rem reading column. Intro, then one question per screen, then results:
+   an axis map, ranked tribes, and a warm-colored "other side" section (teal = where you sit, rust = the opposing case). */
+:root {
+  --bg: #EDF0EE;
+  --surface: #FAFBFA;
+  --ink: #15211F;
+  --muted: #56635F;
+  --line: #CBD3CF;
+  --accent: #0E6B5E;
+  --accent-ink: #FFFFFF;
+  --accent-bg: #DCEBE7;
+  --other: #A83B0C;
+  --other-bg: #F7E8DE;
+  --display: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1615; --surface: #172120; --ink: #E6ECEA; --muted: #9DADA8; --line: #2C3A37;
+    --accent: #4FC3AE; --accent-ink: #08201B; --accent-bg: #153531; --other: #F28D5E; --other-bg: #2D1E16;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1615; --surface: #172120; --ink: #E6ECEA; --muted: #9DADA8; --line: #2C3A37;
+  --accent: #4FC3AE; --accent-ink: #08201B; --accent-bg: #153531; --other: #F28D5E; --other-bg: #2D1E16;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--body); font-size: 1.0625rem; line-height: 1.6;
+  padding-inline: 1rem; padding-block: 1.5rem 4rem;
+}
+.wrap { max-width: 44rem; margin-inline: auto; min-width: 0; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.12; letter-spacing: -0.02em; margin: 0; }
+h1 { font-size: clamp(2.2rem, 7.5vw, 3.5rem); font-weight: 800; }
+h2 { font-size: clamp(1.45rem, 4.6vw, 1.9rem); font-weight: 700; }
+h3 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; }
+p { margin: 0; }
+a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+[tabindex="-1"]:focus { outline: none; }
+.eyebrow { font-family: var(--mono); font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+.mono { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+.stack { display: grid; gap: 1.25rem; }
+.stack-lg { display: grid; gap: 2.25rem; }
+.brandbar { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: 2.5rem; }
+.lede { font-size: 1.2rem; max-width: 36rem; }
+.btn {
+  font: 700 1rem var(--display); background: var(--accent); color: var(--accent-ink);
+  border: 2px solid var(--accent); border-radius: 0.4rem; padding: 0.8rem 1.4rem; cursor: pointer;
+}
+.btn:hover { filter: brightness(1.08); }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.ghost:hover { border-color: var(--ink); filter: none; }
+.row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+.link { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; font-size: 0.92rem; padding: 0.4rem 0; }
+.link:hover { color: var(--ink); }
+.link[disabled] { opacity: 0.4; cursor: default; text-decoration: none; }
+
+/* intro: what gets measured */
+.axes-preview { display: grid; border-top: 1.5px solid var(--ink); }
+.axes-preview > div { display: grid; grid-template-columns: 1fr; gap: 0.1rem 1rem; padding: 0.7rem 0; border-bottom: 1px solid var(--line); }
+.axes-preview strong { font-family: var(--display); font-weight: 700; }
+.axes-preview span { color: var(--muted); font-size: 0.95rem; }
+@media (min-width: 38rem) { .axes-preview > div { grid-template-columns: 13rem 1fr; } }
+
+/* quiz */
+.q-meta { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.6rem; }
+.bar { height: 4px; background: var(--line); border-radius: 2px; margin-bottom: 2rem; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.25s; }
+.opts { display: grid; gap: 0.6rem; margin-block: 1.6rem 1rem; }
+.opt {
+  display: block; width: 100%; text-align: left; font: inherit; line-height: 1.45;
+  background: var(--surface); color: var(--ink); border: 1.5px solid var(--line);
+  border-radius: 0.4rem; padding: 0.9rem 1rem; cursor: pointer;
+}
+.opt:hover { border-color: var(--accent); }
+.opt[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); }
+.q-nav { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.q-hint { color: var(--muted); font-size: 0.95rem; margin-top: 0.5rem; }
+
+/* results */
+.result-head { display: grid; gap: 0.9rem; }
+.result-name { font-size: clamp(1.9rem, 6.5vw, 3rem); font-weight: 800; color: var(--accent); }
+.panel { background: var(--surface); border: 1.5px solid var(--line); border-radius: 0.5rem; padding: 1.25rem; min-width: 0; }
+.caution { border-color: var(--other); background: var(--other-bg); padding: 0.9rem 1rem; border: 1.5px solid var(--other); border-radius: 0.4rem; font-size: 0.97rem; }
+.axis { padding: 0.85rem 0; border-bottom: 1px solid var(--line); }
+.axis:last-of-type { border-bottom: 0; }
+.axis-name { font-family: var(--display); font-weight: 700; font-size: 0.98rem; }
+.axis-poles { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.82rem; color: var(--muted); margin-top: 0.15rem; }
+.axis-poles span { max-width: 48%; min-width: 0; }
+.axis-poles span:last-child { text-align: right; }
+.track { position: relative; height: 1.5rem; margin-top: 0.4rem; }
+.track::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--line); transform: translateY(-50%); }
+.track .mid { position: absolute; left: 50%; top: 20%; bottom: 20%; width: 1px; background: var(--muted); }
+.track .you, .track .tr { position: absolute; top: 50%; width: 1.05rem; height: 1.05rem; border-radius: 50%; transform: translate(-50%, -50%); }
+.track .you { background: var(--accent); border: 2px solid var(--surface); box-shadow: 0 0 0 1.5px var(--accent); z-index: 2; }
+.track .tr { border: 2px solid var(--ink); background: var(--surface); z-index: 1; }
+.axis.unmeasured .track { opacity: 0.35; }
+.axis .note { font-size: 0.82rem; color: var(--muted); font-style: italic; }
+.legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.85rem; color: var(--muted); margin-top: 0.8rem; }
+.legend i { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 50%; vertical-align: -0.1rem; margin-right: 0.4rem; }
+.legend .l-you { background: var(--accent); }
+.legend .l-tr { border: 2px solid var(--ink); background: var(--surface); }
+
+details.tribe { border-top: 1px solid var(--line); }
+details.tribe:last-of-type { border-bottom: 1px solid var(--line); }
+details.tribe summary { list-style: none; cursor: pointer; padding: 0.9rem 0; display: grid; gap: 0.35rem; }
+details.tribe summary::-webkit-details-marker { display: none; }
+.tribe-top { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+.tribe-top strong { font-family: var(--display); font-size: 1.05rem; }
+.tag { font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); white-space: nowrap; }
+.fit { height: 6px; background: var(--line); border-radius: 3px; }
+.fit i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+details.tribe .body { padding: 0.2rem 0 1.2rem; display: grid; gap: 0.8rem; font-size: 1rem; }
+.body ul { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.25rem; }
+.body .who { color: var(--muted); font-size: 0.93rem; }
+.body .steel { border-left: 3px solid var(--line); padding-left: 0.9rem; font-style: italic; }
+
+.other { border: 1.5px solid var(--other); background: var(--other-bg); border-radius: 0.5rem; padding: 1.4rem 1.25rem; display: grid; gap: 1.6rem; min-width: 0; }
+.other h2 { color: var(--other); }
+.pair { display: grid; gap: 0.7rem; }
+.pair .lean { font-size: 1rem; }
+.pair .lean b { font-family: var(--display); }
+.reads { display: grid; gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
+.reads li { display: grid; gap: 0.1rem; padding-top: 0.75rem; border-top: 1px solid color-mix(in srgb, var(--other) 35%, transparent); }
+.reads a { font-family: var(--display); font-weight: 700; color: var(--other); }
+.reads .by { font-family: var(--mono); font-size: 0.76rem; color: var(--muted); }
+.reads .why { font-size: 0.97rem; }
+.furthest { background: var(--surface); border: 1.5px solid var(--other); border-radius: 0.4rem; padding: 1.1rem; display: grid; gap: 0.7rem; }
+.furthest h3 { color: var(--other); }
+.furthest .steel { font-style: italic; }
+.notes { display: grid; gap: 0.7rem; }
+.notes p { font-size: 0.97rem; border-top: 1px solid var(--line); padding-top: 0.7rem; }
+.close { border-top: 1.5px solid var(--ink); padding-top: 1.4rem; display: grid; gap: 1rem; }
+.about { font-size: 0.95rem; }
+.about summary { cursor: pointer; font-family: var(--display); font-weight: 700; padding: 0.4rem 0; }
+.about .stack { margin-top: 0.6rem; gap: 0.8rem; color: var(--muted); }
+.foot { margin-top: 3rem; font-size: 0.85rem; color: var(--muted); }
+.toast { font-family: var(--mono); font-size: 0.8rem; color: var(--accent); min-height: 1.2em; }
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <div class="brandbar">
+    <span class="eyebrow">AI Tribe Compass</span>
+    <span class="eyebrow">Built on “A guide to the AI tribes”</span>
+  </div>
+  <main id="app" aria-live="polite"></main>
+  <p class="foot">Nothing you answer is stored or sent anywhere. Educational tool, not a measurement of anyone’s views.</p>
+</div>
+
+<script id="model">
+const AXES = [
+  { id: "P", name: "Pace", lo: "Slow down", hi: "Speed up", w: 1 },
+  { id: "H", name: "Where the worry points", lo: "Harms happening today", hi: "Catastrophic future risk", w: 1 },
+  { id: "T", name: "Trust in AI companies", lo: "Distrust them", hi: "Trust them to lead", w: 1 },
+  { id: "R", name: "Rules", lo: "Strong binding rules", hi: "Light touch, market-led", w: 1 },
+  { id: "X", name: "How big a deal", lo: "A normal technology", hi: "Transformative, AGI soon", w: 1 },
+  { id: "A", name: "Feeling about the tech", lo: "Wary or opposed", hi: "Enthusiastic", w: 1 },
+  { id: "L", name: "Frame", lo: "Justice and equity", hi: "Tradition, family, nation", w: 0.8 }
+];
+
+const TRIBES = [
+  {
+    id: "rat", name: "AI Safety · the LessWrong orbit", short: "LessWrong safety",
+    vec: { P: -1, H: 1, T: -0.8, R: -0.8, X: 1, A: 0.3, L: 0 },
+    blurb: "Advanced AI is likely within years, and the default outcome is catastrophic unless development is stopped or radically slowed.",
+    beliefs: ["Systems smarter than us may pursue goals nobody managed to specify.", "Failure may be irreversible, so the burden of proof sits with the builders.", "Labs racing ahead, including ones that talk about safety, are part of the problem."],
+    who: "Eliezer Yudkowsky, LessWrong and the wider rationalist community. Often at odds, sometimes publicly, with the Open Philanthropy orbit.",
+    steel: "If a system smarter than us pursues goals we have not managed to specify, nothing afterward can be corrected. Because that failure cannot be undone, the burden of proof belongs with those who want to build it, and delay is cheap next to extinction.",
+    reads: ["agi-ruin", "time-shut"]
+  },
+  {
+    id: "eag", name: "AI Safety · the Open Philanthropy orbit", short: "Open Philanthropy safety",
+    vec: { P: -0.3, H: 0.8, T: 0.1, R: -0.5, X: 0.9, A: 0.5, L: 0 },
+    blurb: "Powerful AI is likely soon and could end badly, but careful actors at the frontier, plus smart policy, can steer it.",
+    beliefs: ["Existential risk from AI is among the most pressing problems, a view that grew out of effective altruism.", "A safety-minded lab at the frontier can do alignment research, set norms others must match, and warn the public.", "Targeted rules, transparency and safety funding beat both a freeze and a free-for-all."],
+    who: "Open Philanthropy (now Coefficient Giving), Dustin Moskovitz, Holden Karnofsky, 80,000 Hours, effective altruism. Its stance toward frontier labs is a live internal argument.",
+    steel: "Powerful AI is coming whether or not any one group opts out. Better that the people most worried about it are in the room, doing the technical work, setting norms that rivals feel pressure to match, and ready to raise the alarm.",
+    reads: ["80k", "carlsmith"]
+  },
+  {
+    id: "eth", name: "Ethics & Bias · “Bluesky AI”", short: "Ethics & Bias",
+    vec: { P: -0.8, H: -0.9, T: -1, R: -0.9, X: -0.3, A: -0.9, L: -1 },
+    blurb: "AI is already causing documented harm, and talk of superintelligence distracts from it.",
+    beliefs: ["Bias in facial recognition and sentencing tools, and the exploitation of data workers, are core issues.", "Energy and water use, copyright, and effects on critical thinking belong in the picture.", "The companies building AI hold too much power to be trusted with setting the agenda."],
+    who: "Timnit Gebru, Margaret Mitchell, Meredith Whittaker, Joy Buolamwini, the AI Now Institute, the FAccT conference. Members dispute the name “Bluesky AI.”",
+    steel: "The harms are documented now: biased systems, exploited data workers, energy and water costs, work taken without consent. Focusing on a hypothetical superintelligence lets the builders set the agenda while the people already harmed wait.",
+    reads: ["ai-now", "gebru"]
+  },
+  {
+    id: "eac", name: "Effective accelerationism (e/acc)", short: "e/acc",
+    vec: { P: 1, H: -0.4, T: 0.8, R: 1, X: 0.7, A: 1, L: -0.3 },
+    blurb: "Technological progress is overwhelmingly good, catastrophe talk is doom fantasy, and regulation mostly entrenches incumbents.",
+    beliefs: ["Advanced AI is a necessary step in civilization becoming more capable.", "Safety rhetoric can be used for regulatory capture against open source and small builders.", "Every delay has a cost in lives not saved and breakthroughs forgone."],
+    who: "Beff Jezos, Marc Andreessen, Garry Tan. Fewer people use the label than at its 2024 peak, but its outlook lives on in the Tech Right.",
+    steel: "Technology has made human life longer and better, and the cost of delay is counted in people not helped. “Safety” rules tend to be written by incumbents to lock out smaller builders and open source, and they hand governments new power.",
+    reads: ["beff", "manifesto"]
+  },
+  {
+    id: "tr", name: "The Tech Right", short: "Tech Right",
+    vec: { P: 0.8, H: -0.3, T: 0.6, R: 0.9, X: 0.3, A: 0.7, L: 0.7 },
+    blurb: "America first, accelerate AI, and keep regulation light and federal.",
+    beliefs: ["Winning the AI race is a national priority.", "State-by-state rules slow builders and should be preempted.", "Selling the American tech stack abroad strengthens US influence."],
+    who: "Marc Andreessen, David Sacks, the All-In podcast, the White House AI Action Plan. The article calls it the strongest AI camp in the current administration, and its preemption attempts drew a bipartisan backlash.",
+    steel: "America’s lead in AI is a national asset. Rules should be light and federal so builders can move quickly, and the US should spread its technology rather than cede ground to rivals.",
+    reads: ["action-plan", "eo-state"]
+  },
+  {
+    id: "mag", name: "The MAGA Base", short: "MAGA Base",
+    vec: { P: -0.5, H: -0.5, T: -1, R: -0.5, X: -0.1, A: -0.6, L: 1 },
+    blurb: "Distrustful of Big Tech from the start, and worried about job loss, children, and threats to family and faith.",
+    beliefs: ["Tech leaders have never been on ordinary people’s side, and AI is no exception.", "Job loss, child safety and the erosion of traditional family and religious life are real concerns.", "States should keep the power to regulate AI."],
+    who: "Steve Bannon, Marjorie Taylor Greene, with Josh Hawley and Rand Paul on state AI laws. Joined Elizabeth Warren and Bernie Sanders in the coalition that defeated the moratorium 99 to 1.",
+    steel: "Big Tech has never been on ordinary people’s side, and AI is no exception. Job loss, children’s safety and the erosion of family and religious life are real, and wealthy tech donors are brushing them aside while they profit.",
+    reads: ["maga-abc", "bannon-warren"]
+  }
+];
+
+const READS = [
+  { id: "agi-ruin", title: "AGI Ruin: A List of Lethalities", by: "Eliezer Yudkowsky, LessWrong", url: "https://www.lesswrong.com/posts/uMQ3cqWDPHhjtiesc/agi-ruin-a-list-of-lethalities", why: "The long-form case that building AGI ends badly. One of the most upvoted posts in the site’s history.", tags: { H: 1, X: 1, P: -0.8, T: -0.4 } },
+  { id: "time-shut", title: "Pausing AI Developments Isn’t Enough. We Need to Shut It All Down", by: "Eliezer Yudkowsky, TIME", url: "https://time.com/6266923/ai-eliezer-yudkowsky-open-letter-not-enough/", why: "The 2023 op-ed arguing a six-month pause falls short of what the risk demands.", tags: { P: -1, R: -1, H: 1, X: 0.8 } },
+  { id: "80k", title: "AI safety reading list", by: "80,000 Hours", url: "https://80000hours.org/2025/05/11-essential-resources-ai-risk/", why: "A curated set of essential resources that captures how the effective-altruism safety scene sees the problem.", tags: { H: 1, X: 1, R: -0.4 } },
+  { id: "statement", title: "Statement on AI Risk", by: "Center for AI Safety", url: "https://aistatement.com/", why: "One sentence putting extinction risk alongside pandemics and nuclear war, signed by lab leaders and leading scientists.", tags: { H: 1, R: -0.5, X: 0.5 } },
+  { id: "ai2027", title: "AI 2027", by: "AI 2027 authors", url: "https://ai-2027.com/", why: "A detailed scenario of how fast AI progress could unfold, from the safety-aligned side.", tags: { X: 1, H: 0.8, P: -0.3 } },
+  { id: "carlsmith", title: "Leaving Open Philanthropy, going to Anthropic", by: "Joe Carlsmith", url: "https://joecarlsmith.com/2025/11/03/leaving-open-philanthropy-going-to-anthropic", why: "A personal account of the doubts that come with working at a frontier lab while fearing where AI is headed.", tags: { H: 0.8, X: 0.8, T: 0.4 } },
+  { id: "ai-now", title: "Artificial Power: 2025 Landscape Report", by: "AI Now Institute", url: "https://ainowinstitute.org/publications/research/ai-now-2025-landscape-report", why: "The Ethics & Bias camp’s account of AI power, AGI claims and the AI safety world.", tags: { H: -1, T: -1, P: -0.6, R: -0.8, A: -0.7, L: -1, X: -0.6 } },
+  { id: "machine-bias", title: "Machine Bias", by: "ProPublica", url: "https://www.propublica.org/article/machine-bias-risk-assessments-in-criminal-sentencing", why: "The 2016 investigation of risk-assessment tools in criminal sentencing that helped launch the fairness movement.", tags: { H: -1, L: -0.8, T: -0.5 } },
+  { id: "bill-of-rights", title: "Blueprint for an AI Bill of Rights", by: "White House OSTP, 2022", url: "https://bidenwhitehouse.archives.gov/ostp/ai-bill-of-rights/", why: "An example of policy work inspired by the Ethics & Bias scene.", tags: { R: -0.8, L: -0.6, H: -0.6, T: -0.4 } },
+  { id: "gebru", title: "Politico on Timnit Gebru and the AI pause letter", by: "Politico Digital Future Daily, 2023", url: "https://www.politico.com/newsletters/digital-future-daily/2023/04/11/timnit-gebrus-anti-ai-pause-00091450", why: "Why one leading ethics researcher asked whether speculative risks were crowding out present-day harms.", tags: { H: -1, L: -0.5, T: -0.5 } },
+  { id: "manifesto", title: "The Techno-Optimist Manifesto", by: "Marc Andreessen", url: "https://a16z.com/the-techno-optimist-manifesto/", why: "The best-known popular statement of the accelerationist outlook.", tags: { P: 1, A: 1, T: 0.7, R: 0.8, H: -0.5, X: 0.3 } },
+  { id: "beff", title: "Notes on e/acc principles and tenets", by: "Beff Jezos", url: "https://beff.substack.com/p/notes-on-eacc-principles-and-tenets", why: "The founding “physics-first” philosophy behind effective accelerationism.", tags: { P: 1, A: 1, H: -0.4, X: 0.8, R: 0.7 } },
+  { id: "action-plan", title: "America’s AI Action Plan", by: "The White House, July 2025", url: "https://www.ai.gov/action-plan", why: "The administration’s plan, with pillars on accelerating innovation and building AI infrastructure.", tags: { P: 0.8, R: 0.8, T: 0.6, L: 0.5, A: 0.6 } },
+  { id: "eo-state", title: "Trump signs executive order to combat state AI regulation", by: "Tech Policy Press", url: "https://www.techpolicy.press/trump-signs-executive-order-to-combat-state-ai-regulation/", why: "Reporting on the December 2025 order creating a task force to challenge state AI laws.", tags: { R: 0.9, P: 0.5, T: 0.4, L: 0.3 } },
+  { id: "normal", title: "AI as Normal Technology", by: "Arvind Narayanan and Sayash Kapoor, Knight First Amendment Institute", url: "https://knightcolumbia.org/content/ai-as-normal-technology", why: "Argues AI is transformative but comparable to electricity or the internet, not an impending superintelligence.", tags: { X: -1, H: -0.5 } },
+  { id: "maga-abc", title: "Inside MAGA’s growing fight to stop Trump’s AI revolution", by: "ABC News", url: "https://abcnews.go.com/US/inside-magas-growing-fight-stop-trumps-ai-revolution/story?id=127824351", why: "How the populist right organized against the Tech Right’s AI agenda.", tags: { T: -1, L: 0.8, A: -0.5, R: -0.5, P: -0.4 } },
+  { id: "bannon-warren", title: "NBC News on the Bannon–Warren coalition against blocking state AI laws", by: "NBC News", url: "https://www.nbcnews.com/tech/tech-news/steve-bannon-elizabeth-warren-bipartisan-backlash-erupts-push-block-st-rcna245040", why: "The unlikely left-right alliance that defeated the state-law moratorium.", tags: { R: -0.7, T: -0.7, L: 0.2 } },
+  { id: "antiqua", title: "Antiqua et nova", by: "Vatican, January 2025", url: "https://www.vatican.va/roman_curia/congregations/cfaith/documents/rc_ddf_doc_20250128_antiqua-et-nova_en.html", why: "The Vatican’s guidelines on AI ethics. A commenter on the source article flags this as an emerging perspective.", tags: { L: 1, A: -0.7, T: -0.4, R: -0.3 } }
+];
+
+const BRIDGE = [
+  { title: "Common ground between AI 2027 and AI as Normal Technology", by: "Asterisk", url: "https://asteriskmag.substack.com/p/common-ground-between-ai-2027-and", why: "Authors from two opposing camps map where they agree and where they do not." },
+  { title: "The AI tribes vying for power", by: "UnHerd", url: "https://unherd.com/2025/04/the-ai-tribes-vying-for-power/", why: "A look at the camps competing for influence over AI policy in the White House." },
+  { title: "A guide to the AI tribes", by: "Michel Justen", url: "https://micheljusten.substack.com/p/a-guide-to-the-ai-tribes", why: "The article this compass is built on, including its case for taking the tribal lens off." }
+];
+
+/* effects: P pace, H worry, T trust, R rules, X how big, A attitude, L frame. Each in -1..1 */
+const QUESTIONS = [
+  { q: "A lab says its next model could speed up drug discovery. Independent testers say it also lowers the barrier to misuse. What should happen?", opts: [
+    { t: "Release it. The benefits are concrete and the risks are speculative.", e: { P: 1, H: -0.3, R: 0.5 } },
+    { t: "Release it with the lab’s own safeguards, and publish what it learns.", e: { T: 0.4, H: 0.3, R: -0.1, P: 0.3 } },
+    { t: "Release only after independent testing and legal safeguards are in place.", e: { P: -0.5, R: -0.8, T: -0.3 } },
+    { t: "Hold it back until the misuse risks are understood, even if that takes years.", e: { P: -1, H: 0.5, R: -0.8 } } ] },
+  { q: "Which description of advanced AI over the next ten years is closest to your own?", opts: [
+    { t: "Like electricity or the internet: transformative, but gradual and manageable.", e: { X: -1, H: -0.3 } },
+    { t: "A big economic shift that will take decades to play out, with real but bounded risks.", e: { X: -0.4 } },
+    { t: "Systems matching human experts at most tasks within about a decade.", e: { X: 0.7 } },
+    { t: "A new kind of intelligence that could outcompete humanity.", e: { X: 1, H: 0.6 } } ] },
+  { q: "Where should the next dollar of AI safety funding go?", opts: [
+    { t: "Biased decisions in hiring, policing and lending that are happening now.", e: { H: -1, L: -0.5 } },
+    { t: "Children’s exposure to chatbots and the loss of jobs.", e: { H: -0.5, L: 0.5 } },
+    { t: "Stopping AI from concentrating power in a few companies or governments.", e: { T: -0.6, H: 0.1 } },
+    { t: "Keeping AI systems from becoming too powerful to control.", e: { H: 1 } },
+    { t: "None of it. Money is better spent building.", e: { P: 0.7, H: -0.3, R: 0.4 } } ] },
+  { q: "A lab says it must build frontier AI itself in order to learn how to make it safe. How do you react?", opts: [
+    { t: "Plausible. The most safety-minded labs should be at the frontier.", e: { T: 0.7, H: 0.3 } },
+    { t: "Maybe true, but it needs outside accountability to count for anything.", e: { T: -0.1, R: -0.5 } },
+    { t: "It is a self-serving justification for doing what they would do anyway.", e: { T: -1 } },
+    { t: "Safety talk is mostly a way for big incumbents to lock out smaller rivals.", e: { R: 1, P: 0.5, T: 0.2, H: -0.5 } } ] },
+  { q: "Should states be allowed to pass their own AI laws?", opts: [
+    { t: "Yes. States should be free to act while Washington stalls.", e: { R: -0.7, T: -0.3 } },
+    { t: "One strong federal standard with real teeth is better than fifty rulebooks.", e: { R: -0.4 } },
+    { t: "One light federal standard that overrides the states, so builders are not slowed.", e: { R: 0.8, P: 0.4 } },
+    { t: "Neither level should regulate how models are built, beyond the basics.", e: { R: 1, P: 0.7 } } ] },
+  { q: "Should the US sell advanced AI chips to China?", opts: [
+    { t: "No. Strict controls buy time for safety and security.", e: { R: -0.4, H: 0.3, L: 0.3 } },
+    { t: "No, for national security. I am not worried about runaway AI.", e: { L: 0.6, H: -0.2 } },
+    { t: "Yes. Selling widely entrenches the American tech stack.", e: { R: 0.8, P: 0.4, L: 0.8, T: 0.4 } },
+    { t: "Yes. Progress should not stop at borders, and the aim is the most capable intelligence in the world.", e: { P: 0.6, R: 0.5, A: 0.6, L: -0.3 } },
+    { t: "I would rather pursue a verifiable international agreement than an arms race.", e: { P: -0.8, H: 0.6, R: -0.6, L: -0.2 } } ] },
+  { q: "How do you feel about using AI tools yourself?", opts: [
+    { t: "I use them daily and want better ones faster.", e: { A: 1, P: 0.4 } },
+    { t: "Useful for specific tasks, and I use them with care.", e: { A: 0.4 } },
+    { t: "I avoid them where I can. They cost more than they give.", e: { A: -0.7 } },
+    { t: "I object to them in principle, over training data, energy or labor.", e: { A: -1, H: -0.5, L: -0.5 } } ] },
+  { q: "A parent group wants limits on AI companions for teenagers. What is your instinct?", opts: [
+    { t: "Support limits. Kids are being used as test subjects by tech companies.", e: { T: -0.8, R: -0.7, L: 0.4, A: -0.3 } },
+    { t: "Support limits, and also audit these systems for bias and labor costs.", e: { R: -0.6, L: -0.6, T: -0.6 } },
+    { t: "Families should decide. Mandates are overreach.", e: { R: 0.7, L: 0.3 } },
+    { t: "Teens will grow up with this. Build better products instead of restricting.", e: { R: 0.6, P: 0.5, A: 0.6 } } ] },
+  { q: "Which statement about human work is closest to your view?", opts: [
+    { t: "Work has dignity beyond income, and AI that replaces it needs strict limits.", e: { L: 0.8, A: -0.5, P: -0.5 } },
+    { t: "Automation should come with strong worker protections and shared ownership.", e: { L: -0.6, T: -0.6, R: -0.5 } },
+    { t: "Technology has always created new jobs, and blocking it costs more than disruption does.", e: { P: 0.8, R: 0.6, T: 0.4 } },
+    { t: "Mass displacement is possible, and that is part of why the stakes are so high.", e: { X: 0.8, H: 0.4 } } ] },
+  { q: "Experts disagree about whether AI could cause human extinction. What is your view?", opts: [
+    { t: "A real risk, high enough that global action is justified now.", e: { H: 1, X: 0.8, P: -0.7 } },
+    { t: "Worth serious research and some precaution, though not my top concern.", e: { H: 0.5, X: 0.4 } },
+    { t: "A distraction from harms already happening.", e: { H: -1, X: -0.3 } },
+    { t: "Science fiction, used to justify heavy regulation or to hype products.", e: { H: -0.8, X: -0.2, R: 0.3 } } ] },
+  { q: "The leading labs announce they are close to human-level AI. What should follow?", opts: [
+    { t: "An internationally enforced halt on larger training runs.", e: { P: -1, R: -0.9, H: 0.8, X: 0.8 } },
+    { t: "Government oversight with mandatory testing and reporting.", e: { R: -0.7, P: -0.3, H: 0.4 } },
+    { t: "The company is best placed to decide what to do next.", e: { T: 0.7, R: 0.6 } },
+    { t: "Run faster. Slowing down helps rivals and costs lives.", e: { P: 1, R: 0.8 } },
+    { t: "Treat the claim skeptically. It is marketing until proven otherwise.", e: { X: -0.7, T: -0.5 } } ] },
+  { q: "Who should have the final say over how the most powerful AI systems are used?", opts: [
+    { t: "Democratically accountable governments, with public oversight.", e: { T: -0.5, R: -0.6 } },
+    { t: "The companies building them, kept honest by competition.", e: { T: 0.8, R: 0.7 } },
+    { t: "Independent boards or trusts with a duty to the long-term future.", e: { H: 0.5, R: -0.2 } },
+    { t: "Nobody alone. Open-source models keep power spread out.", e: { R: 0.5, T: -0.3, A: 0.5 } } ] },
+  { q: "Should the most capable models be released as open weights?", opts: [
+    { t: "Yes. Open weights protect competition and freedom.", e: { P: 0.6, R: 0.7, T: -0.2 } },
+    { t: "Open for most models, closed for the most dangerous capabilities.", e: { R: -0.2, H: 0.3 } },
+    { t: "No. A released model cannot be recalled, so release should be controlled.", e: { R: -0.6, H: 0.5, P: -0.4 } },
+    { t: "The real issue is who owns the data and compute behind models, open or closed.", e: { T: -0.8, L: -0.4 } } ] },
+  { q: "AI uses a lot of energy, water and copyrighted material. How much should that shape policy?", opts: [
+    { t: "A great deal. These are core harms.", e: { H: -0.8, A: -0.7, R: -0.6, L: -0.6 } },
+    { t: "It matters. Set standards and pay creators, but keep building.", e: { R: -0.3, A: 0.2 } },
+    { t: "It is a manageable cost. The benefits outweigh it.", e: { P: 0.7, A: 0.6, R: 0.5 } },
+    { t: "It is secondary to security risks.", e: { H: 0.7 } } ] }
+];
+
+/* ---- scoring ---- */
+function score(answers) {
+  const sum = {}, den = {};
+  AXES.forEach(a => { sum[a.id] = 0; den[a.id] = 0; });
+  QUESTIONS.forEach((q, i) => {
+    const pick = answers[i];
+    if (pick == null) return;
+    AXES.forEach(a => {
+      let m = 0;
+      q.opts.forEach(o => { const v = Math.abs(o.e[a.id] || 0); if (v > m) m = v; });
+      if (m === 0) return;
+      den[a.id] += m;
+      sum[a.id] += q.opts[pick].e[a.id] || 0;
+    });
+  });
+  const s = {}, measured = {};
+  AXES.forEach(a => {
+    measured[a.id] = den[a.id] >= 0.6;
+    s[a.id] = measured[a.id] ? Math.max(-1, Math.min(1, sum[a.id] / den[a.id])) : 0;
+  });
+  return { s, measured };
+}
+
+/* Match on pattern, not magnitude: a moderate answer set that points the same way as a tribe
+   should land there, even though no one reaches a tribe's extremes on every axis. */
+function rank(s, measured) {
+  return TRIBES.map(t => {
+    let dot = 0, ns = 0, np = 0;
+    AXES.forEach(a => {
+      if (!measured[a.id]) return;
+      dot += a.w * s[a.id] * t.vec[a.id];
+      ns += a.w * s[a.id] * s[a.id];
+      np += a.w * t.vec[a.id] * t.vec[a.id];
+    });
+    const sim = ns > 0.0025 && np > 0 ? dot / (Math.sqrt(ns) * Math.sqrt(np)) : 0;
+    return { t, d: 1 - sim, c: (sim + 1) / 2 };
+  }).sort((x, y) => x.d - y.d);
+}
+
+function otherSide(s, measured) {
+  const order = AXES.filter(a => measured[a.id] && Math.abs(s[a.id]) >= 0.2)
+    .sort((x, y) => Math.abs(s[y.id]) - Math.abs(s[x.id])).slice(0, 2);
+  const used = new Set();
+  return order.map(a => {
+    const lean = s[a.id] > 0 ? 1 : -1;
+    const reads = READS
+      .filter(r => r.tags[a.id] && r.tags[a.id] * -lean > 0 && !used.has(r.id))
+      .sort((x, y) => Math.abs(y.tags[a.id]) - Math.abs(x.tags[a.id]))
+      .slice(0, 3);
+    reads.forEach(r => used.add(r.id));
+    return { axis: a, lean, reads };
+  });
+}
+</script>
+
+<script>
+(function () {
+  const app = document.getElementById("app");
+  const N = QUESTIONS.length;
+  const state = { screen: "intro", i: 0, answers: new Array(N).fill(null), busy: false };
+  const byId = id => READS.find(r => r.id === id);
+  const pct = v => Math.max(3, Math.min(97, ((v + 1) / 2) * 100));
+
+  function render(focusSel) {
+    if (state.screen === "intro") app.innerHTML = intro();
+    else if (state.screen === "quiz") app.innerHTML = quiz();
+    else app.innerHTML = result();
+    const f = app.querySelector(focusSel || "[data-focus]");
+    if (f) { f.focus({ preventScroll: true }); }
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
+  function intro() {
+    return `
+    <div class="stack-lg">
+      <div class="stack">
+        <h1 data-focus tabindex="-1">Where do you sit in the AI debate?</h1>
+        <p class="lede">Answer ${N} questions about tradeoffs. You get a map of your leanings, the AI “tribe” you sit closest to, and readings from the other side, so you can see the whole argument.</p>
+        <div class="row">
+          <button class="btn" data-a="start">Start</button>
+          <span class="mono">${N} questions · about 5 minutes</span>
+        </div>
+      </div>
+      <div class="stack">
+        <h2>Seven things it measures</h2>
+        <div class="axes-preview">
+          ${AXES.map(a => `<div><strong>${a.name}</strong><span>${a.lo} ↔ ${a.hi}</span></div>`).join("")}
+        </div>
+        <p class="q-hint">The tribes come from Michel Justen’s “A guide to the AI tribes”: two AI Safety camps, Ethics & Bias, e/acc, the Tech Right and the MAGA Base. You can skip any question.</p>
+      </div>
+    </div>`;
+  }
+
+  function quiz() {
+    const i = state.i, q = QUESTIONS[i];
+    return `
+    <div>
+      <div class="q-meta">
+        <span class="mono">Question ${i + 1} of ${N}</span>
+        <button class="link" data-a="restart">Start over</button>
+      </div>
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${N}" aria-valuenow="${i}"><i style="width:${(i / N) * 100}%"></i></div>
+      <h2 id="qh" data-focus tabindex="-1">${q.q}</h2>
+      <div class="opts" role="group" aria-labelledby="qh">
+        ${q.opts.map((o, k) => `<button class="opt" data-a="pick" data-k="${k}" aria-pressed="${state.answers[i] === k}">${o.t}</button>`).join("")}
+      </div>
+      <div class="q-nav">
+        <button class="link" data-a="back" ${i === 0 ? "disabled" : ""}>← Back</button>
+        <button class="link" data-a="skip">None of these fit, skip →</button>
+      </div>
+    </div>`;
+  }
+
+  function axisRow(a, s, measured, top) {
+    if (!measured[a.id]) {
+      return `<div class="axis unmeasured"><div class="axis-name">${a.name}</div>
+        <div class="axis-poles"><span>${a.lo}</span><span>${a.hi}</span></div>
+        <div class="track"><i class="mid"></i></div><div class="note">Not enough answers to place you.</div></div>`;
+    }
+    return `<div class="axis"><div class="axis-name">${a.name}</div>
+      <div class="axis-poles"><span>${a.lo}</span><span>${a.hi}</span></div>
+      <div class="track" role="img" aria-label="${a.name}: you at ${Math.round(s[a.id] * 100)} on a scale from -100 (${a.lo}) to 100 (${a.hi}); ${top.short} at ${Math.round(top.vec[a.id] * 100)}">
+        <i class="mid"></i><u class="tr" style="left:${pct(top.vec[a.id])}%"></u><b class="you" style="left:${pct(s[a.id])}%"></b>
+      </div></div>`;
+  }
+
+  function readItem(r) {
+    return `<li><a href="${r.url}" target="_blank" rel="noopener">${r.title}</a><span class="by">${r.by}</span><span class="why">${r.why}</span></li>`;
+  }
+
+  function result() {
+    const { s, measured } = score(state.answers);
+    const ranking = rank(s, measured);
+    const top = ranking[0].t, second = ranking[1].t, far = ranking[ranking.length - 1].t;
+    const answered = state.answers.filter(v => v != null).length;
+    const pairs = otherSide(s, measured);
+
+    const notes = [];
+    if (measured.X && s.X <= -0.5) notes.push(`Your view of how big a deal AI will be matches “AI as Normal Technology.” The article treats it as an influential position that has not formed a tribe, so it is not a result above. Its core text is in the readings below if you want to see its strongest form.`);
+    if (measured.L && s.L >= 0.4 && measured.A && s.A <= -0.2) notes.push(`Your answers about family, work and the technology itself echo a religious-ethics perspective, such as the Vatican’s guidance on AI. A commenter on the source article suggests it may become its own camp. <a href="${byId("antiqua").url}" target="_blank" rel="noopener">Antiqua et nova</a> is the place to start.`);
+    if (measured.X && s.X >= 0.5 && measured.H && s.H <= -0.2) notes.push(`You think AI will be very powerful but you worry more about harms in the present than in the future. That combination appears in several camps, so look at which of your other answers point where.`);
+
+    const caution = answered < 8 ? `<p class="caution">You answered ${answered} of ${N} questions, so this is a rough picture. Answer more for a steadier one.</p>` : "";
+
+    const otherHtml = pairs.length
+      ? pairs.map(p => `<div class="pair">
+          <p class="lean">You lean toward <b>${p.lean < 0 ? p.axis.lo.toLowerCase() : p.axis.hi.toLowerCase()}</b> on <i>${p.axis.name.toLowerCase()}</i>. The strongest case for <b>${p.lean < 0 ? p.axis.hi.toLowerCase() : p.axis.lo.toLowerCase()}</b>:</p>
+          <ul class="reads">${p.reads.map(readItem).join("")}</ul></div>`).join("")
+      : `<div class="pair"><p class="lean">You sit near the middle on most axes, so there is no single opposing pole. These readings map the whole debate and where the camps meet.</p>
+          <ul class="reads">${BRIDGE.map(readItem).join("")}</ul></div>`;
+
+    return `
+    <div class="stack-lg">
+      <div class="result-head">
+        <span class="eyebrow">Your result</span>
+        <h1 class="result-name" data-focus tabindex="-1">${top.name}</h1>
+        <p class="lede">${top.blurb}</p>
+        <p>Next closest: <b>${second.name}</b>. Treat this as a blend, not a label. People inside every camp disagree with each other a lot, and your answers can fit more than one.</p>
+        ${caution}
+      </div>
+
+      <section class="stack">
+        <h2>Your compass</h2>
+        <div class="panel">
+          ${AXES.map(a => axisRow(a, s, measured, top)).join("")}
+          <div class="legend"><span><i class="l-you"></i>You</span><span><i class="l-tr"></i>${top.short}</span></div>
+        </div>
+      </section>
+
+      <section class="stack">
+        <h2>All six tribes, nearest to furthest</h2>
+        <div>
+          ${ranking.map((r, idx) => `
+          <details class="tribe" ${idx === 0 ? "open" : ""}>
+            <summary>
+              <span class="tribe-top"><strong>${r.t.name}</strong><span class="tag">${idx === 0 ? "Closest" : idx === ranking.length - 1 ? "Furthest" : idx === 1 ? "Next" : ""}</span></span>
+              <span class="fit" aria-hidden="true"><i style="width:${Math.round(r.c * 100)}%"></i></span>
+            </summary>
+            <div class="body">
+              <p>${r.t.blurb}</p>
+              <ul>${r.t.beliefs.map(b => `<li>${b}</li>`).join("")}</ul>
+              <p class="who">${r.t.who}</p>
+              <p class="steel">${r.t.steel}</p>
+            </div>
+          </details>`).join("")}
+        </div>
+        <p class="q-hint">Bars show how near your answers sit to each tribe’s typical position across the seven axes.</p>
+      </section>
+
+      <section class="other">
+        <div class="stack">
+          <h2>Hear the other side</h2>
+          <p>These readings argue the opposite of your strongest leanings. The aim is to understand the case, not to switch sides.</p>
+        </div>
+        ${otherHtml}
+        <div class="furthest">
+          <span class="eyebrow">The tribe furthest from you</span>
+          <h3>${far.name}</h3>
+          <p>Here is the best case its own members would recognize:</p>
+          <p class="steel">${far.steel}</p>
+          <ul class="reads">${far.reads.map(id => readItem(byId(id))).join("")}</ul>
+        </div>
+      </section>
+
+      ${notes.length ? `<section class="notes"><h2>Also worth noticing</h2>${notes.map(n => `<p>${n}</p>`).join("")}</section>` : ""}
+
+      <section class="close">
+        <h2>Take the lens off</h2>
+        <p>The article behind this tool ends by asking readers to use the tribal lens to understand a debate, then put it down. Weighing evidence from people who disagree with you matters more than scoring points for a side.</p>
+        <div class="row">
+          <button class="btn" data-a="copy">Copy my result</button>
+          <button class="btn ghost" data-a="restart">Retake</button>
+          <span class="toast" id="toast" role="status"></span>
+        </div>
+      </section>
+
+      <details class="about">
+        <summary>How this works and what it leaves out</summary>
+        <div class="stack">
+          <p>Each answer nudges one or more of seven axes. Your score on an axis is the sum of those nudges, scaled by the most any question could move it, so skipped questions do not count against you. Each tribe has a typical position on every axis, and your closeness is the average distance between you and that position. Skipped axes are left out of the comparison.</p>
+          <p>The tribe positions are my reading of Justen’s descriptions, and the question wording and weights are judgment calls. The article leaves out groups that do not cohere into tribes, such as academics and China hawks, and treats “AI as Normal Technology” as a view, not a tribe. This tool follows that choice.</p>
+          <p>Framework: Michel Justen, “A guide to the AI tribes” (January 2026). Justen works at the Tarbell Center for AI Journalism, which is funded by Coefficient Giving, a major player in the story, and he says so in the piece. Built with Claude, an AI model made by Anthropic, a company the article discusses. Reading links come from the article and its comments.</p>
+        </div>
+      </details>
+    </div>`;
+  }
+
+  function summaryText() {
+    const { s, measured } = score(state.answers);
+    const ranking = rank(s, measured);
+    const strong = AXES.filter(a => measured[a.id]).sort((x, y) => Math.abs(s[y.id]) - Math.abs(s[x.id])).slice(0, 2)
+      .map(a => (s[a.id] > 0 ? a.hi : a.lo).toLowerCase());
+    return `My AI Tribe Compass: closest to ${ranking[0].t.name}, then ${ranking[1].t.name}. Strongest leanings: ${strong.join("; ")}. Furthest from: ${ranking[ranking.length - 1].t.name}.`;
+  }
+
+  function toast(msg) { const t = document.getElementById("toast"); if (t) t.textContent = msg; }
+
+  function copy() {
+    const text = summaryText();
+    const fallback = () => {
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      toast(ok ? "Copied" : "Select and copy: " + text);
+    };
+    try {
+      navigator.clipboard.writeText(text).then(() => toast("Copied"), fallback);
+    } catch (e) { fallback(); }
+  }
+
+  function advance() {
+    if (state.i >= N - 1) { state.screen = "result"; render(); }
+    else { state.i += 1; render(); }
+    state.busy = false;
+  }
+
+  app.addEventListener("click", ev => {
+    const b = ev.target.closest("[data-a]");
+    if (!b) return;
+    const act = b.dataset.a;
+    if (act === "start") { state.screen = "quiz"; state.i = 0; render(); }
+    else if (act === "restart") { state.answers = new Array(N).fill(null); state.i = 0; state.screen = "intro"; render(); }
+    else if (act === "back") { if (state.i > 0) { state.i -= 1; render(); } }
+    else if (act === "skip") { if (state.busy) return; state.answers[state.i] = null; advance(); }
+    else if (act === "pick") {
+      if (state.busy) return;
+      state.busy = true;
+      state.answers[state.i] = Number(b.dataset.k);
+      app.querySelectorAll(".opt").forEach(o => o.setAttribute("aria-pressed", o === b ? "true" : "false"));
+      setTimeout(advance, 170);
+    }
+    else if (act === "copy") copy();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
